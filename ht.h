@@ -277,6 +277,7 @@ private:
 
     // ADD MORE DATA MEMBERS HERE, AS NECESSARY
     double resizeAlpha_;
+    int item_count_;
 
 };
 
@@ -297,7 +298,7 @@ const HASH_INDEX_T HashTable<K,V,Prober,Hash,KEqual>::CAPACITIES[] =
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 HashTable<K,V,Prober,Hash,KEqual>::HashTable(
     double resizeAlpha, const Prober& prober, const Hasher& hash, const KEqual& kequal)
-       :  table_(), hash_(hash), kequal_(kequal), prober_(prober), mIndex_(0), resizeAlpha_(resizeAlpha)
+       :  table_(), hash_(hash), kequal_(kequal), prober_(prober), mIndex_(0), resizeAlpha_(resizeAlpha), item_count_(0)
 {
     // Initialize any other data members as necessary
     for (size_t i=0; i < CAPACITIES[0]; i++){
@@ -348,15 +349,8 @@ size_t HashTable<K,V,Prober,Hash,KEqual>::size() const
 template<typename K, typename V, typename Prober, typename Hash, typename KEqual>
 void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
 {
-    // check for current loading factor
-    int count = 0;
-    for (size_t i=0; i < table_.size(); i++){
-        if (nullptr != table_[i]){
-            count++;
-        }
-    }
 
-    if ((double)(count)/(double)(CAPACITIES[mIndex_]) >= resizeAlpha_){
+    if ((double)(item_count_)/(double)(CAPACITIES[mIndex_]) >= resizeAlpha_){
         this->resize();
     }
 
@@ -370,6 +364,7 @@ void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
             throw std::logic_error("Error");
         }
         else{
+            item_count_++;
             HashItem* newitem = new HashItem(p);
             table_[h] = newitem;
         }
@@ -481,6 +476,8 @@ void HashTable<K,V,Prober,Hash,KEqual>::resize()
 
     HASH_INDEX_T newCap = CAPACITIES[mIndex_];
     std::vector<HashItem*> oldTable = table_;
+    std::vector<HashItem*> temp(newCap, nullptr);
+    table_ = temp;
 
     for (size_t i = 0; i < table_.size(); i++){
       table_[i] = nullptr;
@@ -506,6 +503,7 @@ void HashTable<K,V,Prober,Hash,KEqual>::resize()
    
         else if (oldTable[i] != nullptr && oldTable[i]->deleted == true){
             delete oldTable[i];
+            item_count_--;
             //table_[i] = nullptr;
         }
     }
